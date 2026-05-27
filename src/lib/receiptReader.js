@@ -7,9 +7,9 @@
  */
 
 const GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY
-const MODEL      = 'gemini-2.5-flash'
+const MODEL      = 'gemini-flash-latest'
 const GEMINI_URL = () =>
-  `https://generativelanguage.googleapis.com/v1/models/${MODEL}:generateContent?key=${GEMINI_KEY}`
+  `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_KEY}`
 
 const PROMPT = `You are a receipt scanner for a Malaysian expense tracker app.
 Analyze this receipt image and extract:
@@ -19,12 +19,7 @@ Analyze this receipt image and extract:
 4. Category tags (suggest 1-3 tags in Malay or English based on the type of store)
 
 Respond in JSON format only:
-{
-  "amount": number,
-  "description": string,
-  "date": string or null,
-  "tags": string[]
-}
+{"amount": number, "description": string, "date": string or null, "tags": string[]}
 
 If you cannot determine a value, use null.`
 
@@ -62,20 +57,25 @@ export async function readReceipt(file) {
           { inline_data: { mime_type: mimeType, data: base64 } },
         ],
       }],
-      generationConfig: { temperature: 0.1, maxOutputTokens: 256 },
+      generationConfig: { temperature: 0.1, maxOutputTokens: 1024 },
     }),
   })
 
-  if (!res.ok) throw new Error(`Gemini ${res.status}: ${await res.text()}`)
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err?.error?.message ?? `Gemini HTTP ${res.status}`)
+  }
 
   const data = await res.json()
-  const raw  = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? ''
+  const raw  = data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
 
-  // Safely extract the first JSON object from the response
-  const match = raw.match(/\{[\s\S]*?\}/)
-  if (!match) throw new Error('No JSON in Gemini response')
+  // Strip markdown code fences (Gemini often wraps JSON in ```json ... ```)
+  const clean = raw.trim()
+    .replace(/^```[a-z]*\n?/i, '')
+    .replace(/\n?```$/, '')
+    .trim()
 
-  const result = JSON.parse(match[0])
+  const result = JSON.parse(clean)   // throws if malformed — caught by caller
   return {
     amount:      typeof result.amount === 'number' ? result.amount : null,
     description: typeof result.description === 'string' ? result.description : null,
