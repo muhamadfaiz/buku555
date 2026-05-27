@@ -1,22 +1,18 @@
-const CAT = {
-  Makan:     { icon: '🍚', cls: 'bg-amber-100  text-amber-800'  },
-  Transport: { icon: '🚌', cls: 'bg-blue-100   text-blue-800'   },
-  Hutang:    { icon: '💸', cls: 'bg-red-100    text-red-800'    },
-  'Lain-lain':{ icon: '📦', cls: 'bg-purple-100 text-purple-800' },
-}
+import { CAT_META } from './CategoryIcon'
 
 function fmt(n) {
   return Number(n).toLocaleString('ms-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
 export default function ExpenseRow({ expense, onDelete }) {
-  const meta = CAT[expense.category] ?? CAT['Lain-lain']
+  const meta        = CAT_META[expense.category] ?? CAT_META['Lain-lain']
+  const { Icon }    = meta
 
   return (
     <div className="flex items-center gap-3 pl-14 pr-3 py-2 border-b border-nb-line/40 group">
-      {/* Category badge */}
-      <span className={`text-lg flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${meta.cls}`}>
-        {meta.icon}
+      {/* Category badge — hand-drawn icon */}
+      <span className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center p-1.5 ${meta.cls}`}>
+        <Icon />
       </span>
 
       {/* Description + category */}

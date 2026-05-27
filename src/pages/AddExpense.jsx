@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import Layout from '../components/Layout'
+import { CAT_META } from '../components/CategoryIcon'
 
 const CATS = [
-  { key: 'Makan',     icon: '🍚', sel: 'bg-amber-100  border-amber-400  text-amber-800' },
-  { key: 'Transport', icon: '🚌', sel: 'bg-blue-100   border-blue-400   text-blue-800' },
-  { key: 'Hutang',    icon: '💸', sel: 'bg-red-100    border-red-400    text-red-800' },
-  { key: 'Lain-lain', icon: '📦', sel: 'bg-purple-100 border-purple-400 text-purple-800' },
+  { key: 'Makan',      sel: 'bg-amber-100  border-amber-400  text-amber-700' },
+  { key: 'Transport',  sel: 'bg-blue-100   border-blue-400   text-blue-700' },
+  { key: 'Hutang',     sel: 'bg-red-100    border-red-400    text-red-700' },
+  { key: 'Lain-lain',  sel: 'bg-purple-100 border-purple-400 text-purple-700' },
 ]
 
 const TODAY = new Date().toISOString().slice(0, 10)
@@ -101,21 +102,24 @@ export default function AddExpense() {
               Kategori
             </label>
             <div className="grid grid-cols-4 gap-2">
-              {CATS.map(({ key, icon, sel }) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setCategory(key)}
-                  className={`flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl border-2 transition-all text-center ${
-                    category === key
-                      ? sel
-                      : 'bg-white/60 border-gray-200 text-gray-500 hover:border-gray-300'
-                  }`}
-                >
-                  <span className="text-xl">{icon}</span>
-                  <span className="font-mono text-[10px] leading-tight">{key}</span>
-                </button>
-              ))}
+              {CATS.map(({ key, sel }) => {
+                const { Icon } = CAT_META[key]
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setCategory(key)}
+                    className={`flex flex-col items-center gap-1.5 py-2.5 px-1 rounded-xl border-2 transition-all text-center ${
+                      category === key
+                        ? sel
+                        : 'bg-white/60 border-gray-200 text-gray-400 hover:border-gray-300'
+                    }`}
+                  >
+                    <span className="w-7 h-7"><Icon /></span>
+                    <span className="font-mono text-[10px] leading-tight">{key}</span>
+                  </button>
+                )
+              })}
             </div>
           </div>
 
