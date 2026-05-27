@@ -15,12 +15,10 @@ function derivedCategory(tags) {
   return tags.find(t => PRESET_CATS.includes(t)) ?? 'Lain-lain'
 }
 
-/** Return Tailwind classes for an auto-filled vs normal input border */
-function fieldCls(filled, base = '') {
-  return filled
-    ? `bg-yellow-50 border-yellow-400 focus:border-yellow-500 ${base}`
-    : `bg-transparent border-nb-blue/40 focus:border-nb-blue ${base}`
-}
+// ── Shared class helpers ──────────────────────────────────────
+const LBL  = 'block font-mono text-xs font-semibold uppercase tracking-widest text-gray-600 mb-1'
+const INP  = 'w-full bg-transparent border-b-2 border-nb-blue/40 focus:border-nb-blue pb-1 outline-none transition-colors'
+const PH   = 'placeholder:text-gray-400'
 
 export default function AddExpense() {
   const { user }   = useAuth()
@@ -35,17 +33,14 @@ export default function AddExpense() {
   const [receiptFile, setReceiptFile] = useState(null)
   const [uploading,   setUploading]   = useState(false)
 
-  // Scan states
-  const [scanning,    setScanning]    = useState(false)
-  const [scanDone,    setScanDone]    = useState(false)
-  const [scanError,   setScanError]   = useState(false)
-  // Which fields were auto-filled by the scanner — cleared on manual edit
-  const [autoFilled,  setAutoFilled]  = useState(new Set())
+  const [scanning,   setScanning]   = useState(false)
+  const [scanDone,   setScanDone]   = useState(false)
+  const [scanError,  setScanError]  = useState(false)
+  const [autoFilled, setAutoFilled] = useState(new Set())
 
   const [error,  setError]  = useState('')
   const [saving, setSaving] = useState(false)
 
-  // Helper to remove a field from autoFilled when user edits it manually
   function clearFill(...fields) {
     setAutoFilled(prev => {
       const next = new Set(prev)
@@ -54,7 +49,7 @@ export default function AddExpense() {
     })
   }
 
-  // ── Auto-scan when a new receipt photo is selected ───────────
+  // ── Auto-scan when receipt photo is selected ─────────────────
   const prevFile = useRef(null)
   useEffect(() => {
     if (!receiptFile || receiptFile === prevFile.current) return
@@ -65,7 +60,7 @@ export default function AddExpense() {
       setScanning(true)
       setScanDone(false)
       setScanError(false)
-      setAutoFilled(new Set())          // reset highlights for this new scan
+      setAutoFilled(new Set())
 
       try {
         const result = await readReceipt(receiptFile)
@@ -92,7 +87,7 @@ export default function AddExpense() {
     return () => { cancelled = true }
   }, [receiptFile])
 
-  // ── Submit ──────────────────────────────────────────────────
+  // ── Submit ───────────────────────────────────────────────────
   const isValid = parseFloat(amount) > 0 && description.trim().length > 0
 
   async function handleSubmit(e) {
@@ -110,15 +105,14 @@ export default function AddExpense() {
         const { error: upErr } = await supabase.storage
           .from('receipts')
           .upload(path, compressed, { contentType: 'image/jpeg', upsert: false })
-
         if (!upErr) {
           const { data: { publicUrl } } = supabase.storage.from('receipts').getPublicUrl(path)
           receiptUrl = publicUrl
         } else {
-          console.warn('Receipt upload error:', upErr.message)
+          console.warn('Receipt upload:', upErr.message)
         }
-      } catch (imgErr) {
-        console.warn('Image compression error:', imgErr.message)
+      } catch (e) {
+        console.warn('Image compress:', e.message)
       } finally {
         setUploading(false)
       }
@@ -147,14 +141,14 @@ export default function AddExpense() {
       <div className="ruled-paper flex-1 overflow-y-auto page-enter">
         <form onSubmit={handleSubmit} className="flex flex-col gap-6 pl-14 pr-4 py-6">
 
-          {/* ── Error banner ──────────────────────────────── */}
+          {/* ── Error ─────────────────────────────────────── */}
           {error && (
-            <div className="bg-red-100 border border-red-300 text-nb-red text-xs font-mono rounded px-3 py-2 -ml-10">
+            <div className="bg-red-100 border border-red-300 text-nb-red text-sm font-mono rounded px-3 py-2 -ml-10">
               {error}
             </div>
           )}
 
-          {/* ── Receipt photo (top so scan populates fields) ─ */}
+          {/* ── Receipt (top — scan fills fields below) ───── */}
           <ReceiptUpload
             file={receiptFile}
             onChange={f => { setReceiptFile(f); setAutoFilled(new Set()) }}
@@ -163,37 +157,34 @@ export default function AddExpense() {
 
           {/* ── Scan status ───────────────────────────────── */}
           {scanning && (
-            <div className="flex items-center gap-2 -mt-3 font-mono text-xs text-nb-blue">
-              <span className="w-3 h-3 border border-nb-blue/40 border-t-nb-blue rounded-full animate-spin flex-shrink-0" />
+            <div className="flex items-center gap-2 -mt-3 font-mono text-sm text-nb-blue">
+              <span className="w-3.5 h-3.5 border-2 border-nb-blue/30 border-t-nb-blue rounded-full animate-spin flex-shrink-0" />
               Sedang baca resit…
             </div>
           )}
           {scanDone && (
-            <div className="flex items-center gap-1.5 -mt-3 font-mono text-xs text-green-600">
-              <span>✓</span>
-              Resit dibaca — medan yang diisi dipaparkan dalam warna kuning
+            <div className="-mt-3 font-mono text-sm text-green-700">
+              ✓ Resit dibaca — medan diisi dipaparkan dalam warna kuning
             </div>
           )}
           {scanError && (
-            <div className="flex items-center gap-1.5 -mt-3 font-mono text-xs text-amber-600">
-              <span>⚠</span> Tidak dapat membaca resit — isi manual
+            <div className="-mt-3 font-mono text-sm text-amber-700">
+              ⚠ Tidak dapat membaca resit — sila isi secara manual
             </div>
           )}
 
           {/* ── Amount ────────────────────────────────────── */}
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <label className="font-mono text-[10px] uppercase tracking-[2px] text-gray-400">
-                Jumlah (RM)
-              </label>
+              <label className={LBL.replace('block ', '')}>Jumlah (RM)</label>
               {autoFilled.has('amount') && (
-                <span className="font-mono text-[9px] text-yellow-600 bg-yellow-100 px-1.5 py-0.5 rounded">
+                <span className="font-mono text-xs text-yellow-700 bg-yellow-100 px-1.5 py-0.5 rounded font-semibold">
                   ✦ dari resit
                 </span>
               )}
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="font-mono text-2xl text-gray-300">RM</span>
+              <span className="font-mono text-2xl text-gray-500 font-semibold">RM</span>
               <input
                 type="number"
                 inputMode="decimal"
@@ -203,10 +194,10 @@ export default function AddExpense() {
                 value={amount}
                 onChange={e => { setAmount(e.target.value); clearFill('amount') }}
                 autoFocus
-                className={`flex-1 border-b-2 pb-1 font-mono text-4xl font-bold text-nb-blue outline-none placeholder:text-gray-200 transition-colors ${
+                className={`flex-1 border-b-2 pb-1 font-mono text-4xl font-bold text-nb-blue outline-none ${PH} transition-colors ${
                   autoFilled.has('amount')
-                    ? 'bg-yellow-50 border-yellow-400 focus:border-yellow-500'
-                    : 'bg-transparent border-nb-blue/40 focus:border-nb-blue'
+                    ? 'bg-yellow-50 border-yellow-400 focus:border-yellow-500 placeholder:text-yellow-300'
+                    : 'bg-transparent border-nb-blue/40 focus:border-nb-blue placeholder:text-gray-400'
                 }`}
               />
             </div>
@@ -215,11 +206,9 @@ export default function AddExpense() {
           {/* ── Description ───────────────────────────────── */}
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <label className="font-mono text-[10px] uppercase tracking-[2px] text-gray-400">
-                Keterangan
-              </label>
+              <label className={LBL.replace('block ', '')}>Keterangan</label>
               {autoFilled.has('description') && (
-                <span className="font-mono text-[9px] text-yellow-600 bg-yellow-100 px-1.5 py-0.5 rounded">
+                <span className="font-mono text-xs text-yellow-700 bg-yellow-100 px-1.5 py-0.5 rounded font-semibold">
                   ✦ dari resit
                 </span>
               )}
@@ -230,10 +219,10 @@ export default function AddExpense() {
               value={description}
               onChange={e => { setDescription(e.target.value); clearFill('description') }}
               maxLength={80}
-              className={`w-full border-b-2 pb-1 font-hand text-xl text-gray-800 outline-none placeholder:text-gray-300 transition-colors ${
+              className={`${INP} font-hand text-xl text-gray-800 ${
                 autoFilled.has('description')
-                  ? 'bg-yellow-50 border-yellow-400 focus:border-yellow-500'
-                  : 'bg-transparent border-nb-blue/40 focus:border-nb-blue'
+                  ? `bg-yellow-50 border-yellow-400 focus:border-yellow-500 placeholder:text-yellow-300`
+                  : `placeholder:text-gray-400`
               }`}
             />
           </div>
@@ -241,7 +230,7 @@ export default function AddExpense() {
           {/* ── Tags ──────────────────────────────────────── */}
           <div className={autoFilled.has('tags') ? 'bg-yellow-50 rounded-lg px-2 pt-2 pb-1 -mx-2' : ''}>
             {autoFilled.has('tags') && (
-              <p className="font-mono text-[9px] text-yellow-600 mb-1">✦ tag dari resit</p>
+              <p className="font-mono text-xs text-yellow-700 font-semibold mb-1">✦ tag dari resit</p>
             )}
             <TagInput
               tags={tags}
@@ -253,11 +242,9 @@ export default function AddExpense() {
           {/* ── Date ──────────────────────────────────────── */}
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <label className="font-mono text-[10px] uppercase tracking-[2px] text-gray-400">
-                Tarikh
-              </label>
+              <label className={LBL.replace('block ', '')}>Tarikh</label>
               {autoFilled.has('date') && (
-                <span className="font-mono text-[9px] text-yellow-600 bg-yellow-100 px-1.5 py-0.5 rounded">
+                <span className="font-mono text-xs text-yellow-700 bg-yellow-100 px-1.5 py-0.5 rounded font-semibold">
                   ✦ dari resit
                 </span>
               )}
@@ -267,7 +254,7 @@ export default function AddExpense() {
               value={date}
               max={TODAY}
               onChange={e => { setDate(e.target.value); clearFill('date') }}
-              className={`border-b-2 pb-1 font-mono text-base text-gray-700 outline-none transition-colors ${
+              className={`border-b-2 pb-1 font-mono text-base text-gray-800 outline-none transition-colors ${
                 autoFilled.has('date')
                   ? 'bg-yellow-50 border-yellow-400 focus:border-yellow-500'
                   : 'bg-transparent border-nb-blue/40 focus:border-nb-blue'
@@ -277,8 +264,11 @@ export default function AddExpense() {
 
           {/* ── Label (optional) ──────────────────────────── */}
           <div>
-            <label className="block font-mono text-[10px] uppercase tracking-[2px] text-gray-400 mb-1">
-              Label <span className="normal-case text-gray-300">(pilihan — nama kedai / vendor)</span>
+            <label className={LBL}>
+              Label{' '}
+              <span className="normal-case tracking-normal font-normal text-gray-500">
+                (pilihan — nama kedai / vendor)
+              </span>
             </label>
             <input
               type="text"
@@ -286,7 +276,7 @@ export default function AddExpense() {
               value={label}
               onChange={e => setLabel(e.target.value)}
               maxLength={40}
-              className="w-full bg-transparent border-b-2 border-nb-blue/40 focus:border-nb-blue pb-1 font-mono text-sm text-gray-700 outline-none placeholder:text-gray-300 transition-colors"
+              className={`${INP} font-mono text-sm text-gray-800 placeholder:text-gray-400`}
             />
           </div>
 
@@ -295,7 +285,7 @@ export default function AddExpense() {
             <div
               onClick={() => setIsPending(p => !p)}
               className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${
-                isPending ? 'bg-amber-400' : 'bg-gray-200'
+                isPending ? 'bg-amber-400' : 'bg-gray-300'
               }`}
             >
               <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
@@ -303,8 +293,10 @@ export default function AddExpense() {
               }`} />
             </div>
             <div>
-              <p className="font-mono text-[10px] uppercase tracking-[2px] text-gray-400">Belum Selesai</p>
-              <p className="font-mono text-xs text-gray-400">
+              <p className="font-mono text-xs font-semibold uppercase tracking-widest text-gray-600">
+                Belum Selesai
+              </p>
+              <p className="font-mono text-xs text-gray-500 mt-0.5">
                 {isPending ? '⏳ Rekod ini masih belum disahkan' : 'Rekod sudah selesai'}
               </p>
             </div>
@@ -312,26 +304,26 @@ export default function AddExpense() {
 
           {/* ── Upload progress ───────────────────────────── */}
           {uploading && (
-            <div className="flex items-center gap-2 font-mono text-xs text-nb-blue -mt-2">
-              <span className="w-3 h-3 border border-nb-blue/40 border-t-nb-blue rounded-full animate-spin" />
+            <div className="flex items-center gap-2 font-mono text-sm text-nb-blue -mt-2">
+              <span className="w-3.5 h-3.5 border-2 border-nb-blue/30 border-t-nb-blue rounded-full animate-spin" />
               Memuat naik gambar resit…
             </div>
           )}
 
-          {/* ── Action buttons ────────────────────────────── */}
+          {/* ── Buttons ───────────────────────────────────── */}
           <div className="flex gap-3 mt-2">
             <button
               type="button"
               onClick={() => navigate(-1)}
               disabled={busy}
-              className="flex-1 py-3 rounded-xl border-2 border-gray-300 text-gray-500 font-stamp tracking-wide hover:border-gray-400 transition-colors disabled:opacity-40"
+              className="flex-1 py-3 rounded-xl border-2 border-gray-400 text-gray-600 font-stamp text-base tracking-wide hover:border-gray-500 transition-colors disabled:opacity-40"
             >
               Batal
             </button>
             <button
               type="submit"
               disabled={!isValid || busy}
-              className="flex-1 py-3 rounded-xl bg-nb-blue text-white font-stamp tracking-wide hover:bg-nb-navy transition-colors disabled:opacity-40 shadow-md"
+              className="flex-1 py-3 rounded-xl bg-nb-blue text-white font-stamp text-base tracking-wide hover:bg-nb-navy transition-colors disabled:opacity-40 shadow-md"
             >
               {busy ? 'Menyimpan…' : '💾 Simpan'}
             </button>
