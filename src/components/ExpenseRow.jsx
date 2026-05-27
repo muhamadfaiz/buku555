@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { CAT_META } from './CategoryIcon'
 import ReceiptModal from './ReceiptModal'
 
@@ -22,6 +23,7 @@ function resolveMeta(expense) {
 
 export default function ExpenseRow({ expense, onDelete }) {
   const [modalOpen, setModalOpen] = useState(false)
+  const navigate = useNavigate()
 
   const meta    = resolveMeta(expense)
   const { Icon } = meta
@@ -93,16 +95,25 @@ export default function ExpenseRow({ expense, onDelete }) {
           RM {fmt(expense.amount)}
         </span>
 
-        {/* ── Delete button ────────────────────────────── */}
-        {onDelete && (
+        {/* ── Edit + Delete buttons (visible on hover) ─── */}
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0">
           <button
-            onClick={() => onDelete(expense.id)}
-            className="text-gray-300 hover:text-nb-red text-xs opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
-            title="Padam"
+            onClick={() => navigate(`/edit/${expense.id}`)}
+            className="text-gray-300 hover:text-nb-blue text-sm px-1"
+            title="Edit"
           >
-            ✕
+            ✎
           </button>
-        )}
+          {onDelete && (
+            <button
+              onClick={() => onDelete(expense.id)}
+              className="text-gray-300 hover:text-nb-red text-xs px-1"
+              title="Padam"
+            >
+              ✕
+            </button>
+          )}
+        </div>
 
         {/* ── Receipt thumbnail (polaroid taped to page) ── */}
         {hasPhoto && (
