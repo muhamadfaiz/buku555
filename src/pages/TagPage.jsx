@@ -73,7 +73,7 @@ export default function TagPage() {
 
   return (
     <Layout title={`#${tag}`}>
-      <div className="flex flex-col flex-1 overflow-hidden">
+      <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
 
         {/* ── Coloured tag banner ──────────────────────────── */}
         <div className={`${bannerCls(tag)} px-4 pt-2 pb-5 flex-shrink-0`}>
@@ -103,7 +103,7 @@ export default function TagPage() {
         </div>
 
         {/* ── Expense list ─────────────────────────────────── */}
-        <div className="ruled-paper flex-1 overflow-y-auto page-enter">
+        <div className="ruled-paper flex-1 min-h-0 overflow-y-auto page-enter">
 
           {loading && (
             <div className="flex justify-center py-16">

@@ -79,7 +79,7 @@ export default function MonthlyPage() {
 
   return (
     <Layout title="Ringkasan Bulanan">
-      <div className="flex flex-col flex-1 overflow-hidden">
+      <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
 
         {/* ── Month selector ──────────────────────────────── */}
         <div className="bg-nb-blue/90 flex items-center justify-between px-4 py-3 flex-shrink-0">
@@ -118,7 +118,7 @@ export default function MonthlyPage() {
         </div>
 
         {/* ── Paper content ────────────────────────────────── */}
-        <div className="ruled-paper flex-1 overflow-y-auto page-enter">
+        <div className="ruled-paper flex-1 min-h-0 overflow-y-auto page-enter">
           {loading && (
             <div className="flex justify-center py-12">
               <div className="w-6 h-6 border-2 border-nb-blue/30 border-t-nb-blue rounded-full animate-spin" />
