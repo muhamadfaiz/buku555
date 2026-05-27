@@ -2,7 +2,7 @@
  * Compress an image File to JPEG, capping width at maxWidth px.
  * Returns a new File object ready to pass to Supabase Storage.
  */
-export function compressImage(file, maxWidth = 800, quality = 0.82) {
+export function compressImage(file, maxWidth = 800, quality = 0.70) {
   return new Promise((resolve, reject) => {
     const img    = new Image()
     const objUrl = URL.createObjectURL(file)

@@ -6,8 +6,9 @@ import Dashboard     from './pages/Dashboard'
 import AddExpense    from './pages/AddExpense'
 import EditExpense   from './pages/EditExpense'
 import MonthlyPage   from './pages/MonthlyPage'
-import TagPage       from './pages/TagPage'
-import HutangPage    from './pages/HutangPage'
+import TagPage            from './pages/TagPage'
+import HutangPage         from './pages/HutangPage'
+import ResetPasswordPage  from './pages/ResetPasswordPage'
 
 export default function App() {
   return (
@@ -15,7 +16,8 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           {/* Public */}
-          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/auth"           element={<AuthPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           {/* Protected */}
           <Route path="/dashboard" element={
