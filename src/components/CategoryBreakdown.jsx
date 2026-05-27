@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { CAT_META, IconTag } from './CategoryIcon'
 
 // ── Known-category bar colours ───────────────────────────────
@@ -30,6 +31,7 @@ function fmt(n) {
 }
 
 export default function CategoryBreakdown({ expenses }) {
+  const navigate = useNavigate()
   // ── Aggregate amount per tag ─────────────────────────────
   // Each expense is counted once per tag it carries, so tags can overlap —
   // that's intentional: "Food & Beverage" and "Restaurant" can both total 59.90.
@@ -76,7 +78,8 @@ export default function CategoryBreakdown({ expenses }) {
         return (
           <div
             key={tag}
-            className="flex items-center gap-3 pl-14 pr-2 py-2 border-b border-nb-line/30"
+            onClick={() => navigate(`/tag/${encodeURIComponent(tag)}`)}
+            className="flex items-center gap-3 pl-14 pr-2 py-2 border-b border-nb-line/30 cursor-pointer hover:bg-nb-blue/5 active:bg-nb-blue/10 transition-colors"
           >
             {/* Hand-drawn icon badge */}
             <span className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center p-1.5 ${badgeCls}`}>

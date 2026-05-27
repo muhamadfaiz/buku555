@@ -69,12 +69,14 @@ export default function ExpenseRow({ expense, onDelete }) {
           {/* Tag chips row */}
           <div className="flex flex-wrap gap-1 mt-0.5">
             {displayTags.map(tag => (
-              <span
+              <button
                 key={tag}
-                className="font-mono text-[9px] text-gray-400 leading-none"
+                type="button"
+                onClick={e => { e.stopPropagation(); navigate(`/tag/${encodeURIComponent(tag)}`) }}
+                className="font-mono text-[9px] text-gray-400 leading-none hover:text-nb-blue hover:underline transition-colors"
               >
                 #{tag}
-              </span>
+              </button>
             ))}
             {pending && (
               <span className="font-mono text-[9px] text-amber-500 leading-none ml-1">

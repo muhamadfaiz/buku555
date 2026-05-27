@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { suggestTags } from '../lib/deepseek'
 
-const PRESET_CATS = ['Makan', 'Transport', 'Hutang', 'Lain-lain']
-
 const TAG_COLOR = {
   Makan:       'bg-amber-500',
   Transport:   'bg-blue-600',
@@ -66,9 +64,7 @@ export default function TagInput({ tags, onChange, description }) {
     }
   }
 
-  const hasPreset       = tags.some(t => PRESET_CATS.includes(t))
   const filteredSuggest = suggestions.filter(t => !tags.includes(t))
-  const presetsToShow   = PRESET_CATS.filter(t => !tags.includes(t))
 
   return (
     <div className="space-y-3">
@@ -145,26 +141,6 @@ export default function TagInput({ tags, onChange, description }) {
         </div>
       )}
 
-      {/* ── Preset category quick-add ───────────────────── */}
-      {!hasPreset && presetsToShow.length > 0 && (
-        <div>
-          <p className="font-mono text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-            Kategori
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {presetsToShow.map(cat => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => addTag(cat)}
-                className={`px-3 py-1.5 rounded-full text-sm font-mono font-semibold text-white border-2 border-dashed border-white/50 transition-all hover:border-white shadow-sm ${tagColor(cat)}`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
