@@ -1,0 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=Caveat:wght@600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: #2c3e5a;
+}
+
+/* ── Ruled notebook paper ─────────────────────────────── */
+.ruled-paper {
+  background-color: #f5f0e8;
+  background-image:
+    linear-gradient(#e07070 0px, #e07070 100%),
+    repeating-linear-gradient(
+      transparent 0px,
+      transparent 31px,
+      #b8cfe0 31px,
+      #b8cfe0 32px
+    );
+  background-size: 1px 100%, 100% 32px;
+  background-position: 48px 0, 0 48px;
+  background-repeat: no-repeat, repeat;
+}
+
+/* ── 555 stamp font ───────────────────────────────────── */
+.font-stamp { font-family: 'Special Elite', cursive; }
+.font-hand  { font-family: 'Caveat', cursive; }
+
+/* ── Scrollbar ────────────────────────────────────────── */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-thumb { background: #b8cfe0; border-radius: 2px; }
+
+/* ── Page enter animation ─────────────────────────────── */
+.page-enter { animation: slideIn 0.22s ease-out; }
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
