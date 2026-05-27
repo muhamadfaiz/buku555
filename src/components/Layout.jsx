@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -7,9 +8,34 @@ const NAV = [
   { to: '/monthly',   icon: '📊',  label: 'Bulanan' },
 ]
 
+// Approximate nav bar height in px — used for content padding
+const NAV_H = 56
+
 export default function Layout({ children, title }) {
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
+
+  const [navHidden, setNavHidden] = useState(false)
+  const lastScrollTop = useRef(0)
+
+  // ── Listen for scroll on any child element (capture phase) ───
+  useEffect(() => {
+    const handler = (e) => {
+      const el = e.target
+      if (!el || typeof el.scrollTop !== 'number') return
+
+      const curr  = el.scrollTop
+      const delta = curr - lastScrollTop.current
+
+      if      (delta >  10 && curr > 60) setNavHidden(true)   // scrolling down
+      else if (delta < -10)              setNavHidden(false)   // scrolling up
+
+      lastScrollTop.current = curr
+    }
+
+    document.addEventListener('scroll', handler, { capture: true, passive: true })
+    return () => document.removeEventListener('scroll', handler, { capture: true })
+  }, [])
 
   async function handleSignOut() {
     await signOut()
@@ -17,11 +43,11 @@ export default function Layout({ children, title }) {
   }
 
   return (
-    <div className="flex flex-col min-h-screen max-w-md mx-auto shadow-2xl">
+    <div className="flex flex-col h-screen max-w-md mx-auto shadow-2xl">
+
       {/* ── Header ───────────────────────────────────────── */}
-      <header className="bg-nb-blue px-4 py-3 flex items-center justify-between flex-shrink-0">
+      <header className="bg-nb-blue px-4 py-3 flex items-center justify-between flex-shrink-0 z-30">
         <div className="flex items-center gap-3">
-          {/* Mini stamp badge */}
           <div className="border-2 border-nb-red rounded px-2 py-0.5 font-stamp text-nb-red text-sm leading-none">
             555
           </div>
@@ -39,12 +65,22 @@ export default function Layout({ children, title }) {
       </header>
 
       {/* ── Page content ─────────────────────────────────── */}
-      <main className="flex-1 overflow-hidden flex flex-col">
+      {/* pb keeps content above the fixed nav; transitions with nav */}
+      <main
+        className="flex-1 overflow-hidden flex flex-col transition-[padding-bottom] duration-300"
+        style={{ paddingBottom: navHidden ? 0 : NAV_H }}
+      >
         {children}
       </main>
 
-      {/* ── Bottom nav ───────────────────────────────────── */}
-      <nav className="bg-nb-navy flex-shrink-0 flex border-t border-nb-blue/50">
+      {/* ── Bottom nav (fixed, auto-hides on scroll down) ─── */}
+      <nav
+        className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-nb-navy flex border-t border-nb-blue/50 z-40"
+        style={{
+          transform:  navHidden ? 'translateY(100%)' : 'translateY(0)',
+          transition: 'transform 300ms cubic-bezier(0.4,0,0.2,1)',
+        }}
+      >
         {NAV.map(({ to, icon, label }) => (
           <NavLink
             key={to}
@@ -62,6 +98,7 @@ export default function Layout({ children, title }) {
           </NavLink>
         ))}
       </nav>
+
     </div>
   )
 }
