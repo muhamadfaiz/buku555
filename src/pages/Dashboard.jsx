@@ -81,8 +81,8 @@ export default function Dashboard() {
           {monthName}
         </p>
         <div className="flex items-baseline gap-2">
-          <span className="font-mono text-white/70 text-sm">RM</span>
-          <span className="font-mono text-white text-4xl font-bold">{fmt(total)}</span>
+          <span className="font-stamp text-white/70 text-2xl">RM</span>
+          <span className="font-stamp text-white text-5xl">{fmt(total)}</span>
         </div>
         <p className="font-mono text-white/50 text-xs mt-1">
           {expenses.length} transaksi bulan ini

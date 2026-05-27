@@ -97,18 +97,18 @@ export default function MonthlyPage() {
           {/* Total card */}
           <div className="flex-1 bg-white/10 rounded-xl p-3">
             <p className="font-mono text-white/60 text-[10px] uppercase tracking-wider">Jumlah</p>
-            <p className="font-mono text-white font-bold text-xl">RM {fmt(total)}</p>
+            <p className="font-stamp text-white text-xl">RM {fmt(total)}</p>
           </div>
           {/* Average card */}
           <div className="flex-1 bg-white/10 rounded-xl p-3">
             <p className="font-mono text-white/60 text-[10px] uppercase tracking-wider">Purata/Hari</p>
-            <p className="font-mono text-white font-bold text-xl">RM {fmt(avgDay)}</p>
+            <p className="font-stamp text-white text-xl">RM {fmt(avgDay)}</p>
             <p className="font-mono text-white/40 text-[10px]">{days} hari aktif</p>
           </div>
           {/* Transactions card */}
           <div className="flex-1 bg-white/10 rounded-xl p-3">
             <p className="font-mono text-white/60 text-[10px] uppercase tracking-wider">Transaksi</p>
-            <p className="font-mono text-white font-bold text-xl">{expenses.length}</p>
+            <p className="font-stamp text-white text-xl">{expenses.length}</p>
           </div>
         </div>
 

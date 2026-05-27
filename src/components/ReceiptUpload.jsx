@@ -22,8 +22,8 @@ export default function ReceiptUpload({ file, onChange, uploading }) {
 
   return (
     <div>
-      <label className="block font-mono text-[10px] uppercase tracking-[2px] text-gray-400 mb-2">
-        Resit <span className="normal-case tracking-normal text-gray-300">(pilihan)</span>
+      <label className="block font-mono text-xs font-semibold uppercase tracking-widest text-gray-600 mb-2">
+        Resit <span className="normal-case tracking-normal font-normal text-gray-500">(pilihan)</span>
       </label>
 
       {/* Hidden inputs */}
@@ -38,17 +38,17 @@ export default function ReceiptUpload({ file, onChange, uploading }) {
           <button
             type="button"
             onClick={() => camRef.current?.click()}
-            className="flex items-center gap-1.5 px-3 py-2 border-2 border-dashed border-nb-blue/30 rounded-xl text-gray-400 hover:border-nb-blue/60 hover:text-nb-blue transition-all font-mono text-xs"
+            className="flex items-center gap-2 px-4 py-2.5 border-2 border-dashed border-nb-blue/40 rounded-xl text-gray-600 hover:border-nb-blue hover:text-nb-blue transition-all font-mono text-sm font-semibold"
           >
-            <span className="text-base">📷</span>
+            <span className="text-lg">📷</span>
             Kamera
           </button>
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="flex items-center gap-1.5 px-3 py-2 border-2 border-dashed border-nb-blue/30 rounded-xl text-gray-400 hover:border-nb-blue/60 hover:text-nb-blue transition-all font-mono text-xs"
+            className="flex items-center gap-2 px-4 py-2.5 border-2 border-dashed border-nb-blue/40 rounded-xl text-gray-600 hover:border-nb-blue hover:text-nb-blue transition-all font-mono text-sm font-semibold"
           >
-            <span className="text-base">🖼️</span>
+            <span className="text-lg">🖼️</span>
             Galeri
           </button>
         </div>
@@ -74,20 +74,20 @@ export default function ReceiptUpload({ file, onChange, uploading }) {
 
           {/* Action links */}
           <div className="flex flex-col gap-1.5">
-            <p className="font-mono text-[10px] text-gray-400 truncate max-w-[140px]">
+            <p className="font-mono text-xs text-gray-500 truncate max-w-[140px]">
               {file.name}
             </p>
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="text-xs font-mono text-nb-blue hover:underline text-left"
+              className="text-sm font-mono font-semibold text-nb-blue hover:underline text-left"
             >
               Tukar gambar
             </button>
             <button
               type="button"
               onClick={() => onChange(null)}
-              className="text-xs font-mono text-nb-red hover:underline text-left"
+              className="text-sm font-mono font-semibold text-nb-red hover:underline text-left"
             >
               Buang
             </button>
