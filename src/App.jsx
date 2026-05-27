@@ -4,6 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import AuthPage      from './pages/AuthPage'
 import Dashboard     from './pages/Dashboard'
 import AddExpense    from './pages/AddExpense'
+import EditExpense   from './pages/EditExpense'
 import MonthlyPage   from './pages/MonthlyPage'
 
 export default function App() {
@@ -20,6 +21,9 @@ export default function App() {
           } />
           <Route path="/add" element={
             <ProtectedRoute><AddExpense /></ProtectedRoute>
+          } />
+          <Route path="/edit/:id" element={
+            <ProtectedRoute><EditExpense /></ProtectedRoute>
           } />
           <Route path="/monthly" element={
             <ProtectedRoute><MonthlyPage /></ProtectedRoute>
