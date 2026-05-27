@@ -7,9 +7,9 @@
  */
 
 const GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY
-const MODEL      = 'gemini-2.0-flash'
+const MODEL      = 'gemini-2.5-flash'
 const GEMINI_URL = () =>
-  `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_KEY}`
+  `https://generativelanguage.googleapis.com/v1/models/${MODEL}:generateContent?key=${GEMINI_KEY}`
 
 const PROMPT = `You are a receipt scanner for a Malaysian expense tracker app.
 Analyze this receipt image and extract:
