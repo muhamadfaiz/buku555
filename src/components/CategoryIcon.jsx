@@ -88,6 +88,20 @@ export function IconLainLain({ className = 'w-full h-full' }) {
   )
 }
 
+// ── Generic tag — hand-drawn hashtag for custom/AI tags ─────
+export function IconTag({ className = 'w-full h-full' }) {
+  return (
+    <svg {...SP} className={className}>
+      {/* Vertical strokes — slight S-curve wobble */}
+      <path d="M9.5 4C9.2 7.5 8.8 12 8.4 16C8.2 18 8 20 7.8 21.5"/>
+      <path d="M14.5 4C14.2 7.5 13.8 12 13.4 16C13.2 18 13 20 12.8 21.5"/>
+      {/* Horizontal strokes — slight bow */}
+      <path d="M6 9.5C8.5 9.3 11.5 9.7 18 9.5"/>
+      <path d="M5.5 15C8 14.8 11 15.2 17.5 15"/>
+    </svg>
+  )
+}
+
 // ── Meta map used across the app ─────────────────────────────
 export const CAT_META = {
   Makan:       { Icon: IconMakan,      cls: 'bg-amber-100  text-amber-700'  },
