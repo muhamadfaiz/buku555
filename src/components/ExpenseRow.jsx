@@ -85,7 +85,7 @@ export default function ExpenseRow({ expense, onDelete }) {
         </div>
 
         {/* ── Amount ──────────────────────────────────── */}
-        <span className={`font-mono font-bold text-sm flex-shrink-0 ${
+        <span className={`font-stamp text-base flex-shrink-0 ${
           pending
             ? 'text-gray-400 line-through decoration-amber-400'
             : expense.category === 'Hutang' || expense.tags?.includes('Hutang')

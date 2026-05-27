@@ -184,7 +184,7 @@ export default function AddExpense() {
               )}
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="font-mono text-2xl text-gray-500 font-semibold">RM</span>
+              <span className="font-stamp text-2xl text-gray-500">RM</span>
               <input
                 type="number"
                 inputMode="decimal"
@@ -194,7 +194,7 @@ export default function AddExpense() {
                 value={amount}
                 onChange={e => { setAmount(e.target.value); clearFill('amount') }}
                 autoFocus
-                className={`flex-1 border-b-2 pb-1 font-mono text-4xl font-bold text-nb-blue outline-none ${PH} transition-colors ${
+                className={`flex-1 border-b-2 pb-1 font-stamp text-5xl text-nb-blue outline-none ${PH} transition-colors ${
                   autoFilled.has('amount')
                     ? 'bg-yellow-50 border-yellow-400 focus:border-yellow-500 placeholder:text-yellow-300'
                     : 'bg-transparent border-nb-blue/40 focus:border-nb-blue placeholder:text-gray-400'

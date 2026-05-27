@@ -207,7 +207,7 @@ export default function EditExpense() {
               Jumlah (RM)
             </label>
             <div className="flex items-baseline gap-2">
-              <span className="font-mono text-2xl text-gray-300">RM</span>
+              <span className="font-stamp text-2xl text-gray-500">RM</span>
               <input
                 type="number"
                 inputMode="decimal"
@@ -217,7 +217,7 @@ export default function EditExpense() {
                 value={amount}
                 onChange={e => setAmount(e.target.value)}
                 autoFocus
-                className="flex-1 bg-transparent border-b-2 border-nb-blue/40 focus:border-nb-blue pb-1 font-mono text-4xl font-bold text-nb-blue outline-none placeholder:text-gray-200 transition-colors"
+                className="flex-1 bg-transparent border-b-2 border-nb-blue/40 focus:border-nb-blue pb-1 font-stamp text-5xl text-nb-blue outline-none placeholder:text-gray-400 transition-colors"
               />
             </div>
           </div>

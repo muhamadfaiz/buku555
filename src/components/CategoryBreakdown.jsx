@@ -97,7 +97,7 @@ export default function CategoryBreakdown({ expenses }) {
             </div>
 
             {/* Amount */}
-            <span className="font-mono text-sm font-bold text-nb-blue flex-shrink-0 min-w-[80px] text-right">
+            <span className="font-stamp text-base text-nb-blue flex-shrink-0 min-w-[80px] text-right">
               RM {fmt(amt)}
             </span>
           </div>
