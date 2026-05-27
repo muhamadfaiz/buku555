@@ -63,8 +63,8 @@ export default function TagPage() {
     })()
   }, [user, tag])
 
-  function handleDelete(id) {
-    supabase.from('expenses').delete().eq('id', id)
+  async function handleDelete(id) {
+    await supabase.from('expenses').delete().eq('id', id)
     setExpenses(prev => prev.filter(e => e.id !== id))
   }
 
@@ -121,7 +121,7 @@ export default function TagPage() {
             </div>
           )}
 
-          {!loading && grouped.map(([date, exps]) => {
+                    {!loading && grouped.map(([date, exps]) => {
             const dayTotal = exps.reduce((s, e) => s + Number(e.amount), 0)
             return (
               <div key={date} className="mb-2">

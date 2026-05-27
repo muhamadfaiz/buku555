@@ -8,11 +8,13 @@ import Layout from '../components/Layout'
 import TagInput from '../components/TagInput'
 import ReceiptUpload from '../components/ReceiptUpload'
 
-const PRESET_CATS = ['Makan', 'Transport', 'Hutang', 'Lain-lain']
+const PRESET_CATS = ['Makan', 'Transport', 'Lain-lain']
 const TODAY = new Date().toISOString().slice(0, 10)
 
 function derivedCategory(tags) {
-  return tags.find(t => PRESET_CATS.includes(t)) ?? 'Lain-lain'
+  const match = tags.find(t => PRESET_CATS.some(c => c.toLowerCase() === t.toLowerCase()))
+  if (!match) return 'Lain-lain'
+  return PRESET_CATS.find(c => c.toLowerCase() === match.toLowerCase())
 }
 
 // ── Shared class helpers ──────────────────────────────────────
@@ -48,6 +50,8 @@ export default function AddExpense() {
       return next
     })
   }
+
+
 
   // ── Auto-scan when receipt photo is selected ─────────────────
   const prevFile = useRef(null)
@@ -238,6 +242,8 @@ export default function AddExpense() {
               description={description}
             />
           </div>
+
+
 
           {/* ── Date ──────────────────────────────────────── */}
           <div>
