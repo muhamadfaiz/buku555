@@ -6,6 +6,7 @@ import Dashboard     from './pages/Dashboard'
 import AddExpense    from './pages/AddExpense'
 import EditExpense   from './pages/EditExpense'
 import MonthlyPage   from './pages/MonthlyPage'
+import TagPage       from './pages/TagPage'
 
 export default function App() {
   return (
@@ -27,6 +28,9 @@ export default function App() {
           } />
           <Route path="/monthly" element={
             <ProtectedRoute><MonthlyPage /></ProtectedRoute>
+          } />
+          <Route path="/tag/:tag" element={
+            <ProtectedRoute><TagPage /></ProtectedRoute>
           } />
 
           {/* Default */}
