@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { compressImage } from '../lib/imageUtils'
+import { readReceipt } from '../lib/receiptReader'
 import Layout from '../components/Layout'
 import TagInput from '../components/TagInput'
 import ReceiptUpload from '../components/ReceiptUpload'
@@ -10,9 +11,15 @@ import ReceiptUpload from '../components/ReceiptUpload'
 const PRESET_CATS = ['Makan', 'Transport', 'Hutang', 'Lain-lain']
 const TODAY = new Date().toISOString().slice(0, 10)
 
-// Derive a legacy `category` value from the tags array for backward-compat
 function derivedCategory(tags) {
   return tags.find(t => PRESET_CATS.includes(t)) ?? 'Lain-lain'
+}
+
+/** Return Tailwind classes for an auto-filled vs normal input border */
+function fieldCls(filled, base = '') {
+  return filled
+    ? `bg-yellow-50 border-yellow-400 focus:border-yellow-500 ${base}`
+    : `bg-transparent border-nb-blue/40 focus:border-nb-blue ${base}`
 }
 
 export default function AddExpense() {
@@ -27,9 +34,65 @@ export default function AddExpense() {
   const [isPending,   setIsPending]   = useState(false)
   const [receiptFile, setReceiptFile] = useState(null)
   const [uploading,   setUploading]   = useState(false)
-  const [error,       setError]       = useState('')
-  const [saving,      setSaving]      = useState(false)
 
+  // Scan states
+  const [scanning,    setScanning]    = useState(false)
+  const [scanDone,    setScanDone]    = useState(false)
+  const [scanError,   setScanError]   = useState(false)
+  // Which fields were auto-filled by the scanner — cleared on manual edit
+  const [autoFilled,  setAutoFilled]  = useState(new Set())
+
+  const [error,  setError]  = useState('')
+  const [saving, setSaving] = useState(false)
+
+  // Helper to remove a field from autoFilled when user edits it manually
+  function clearFill(...fields) {
+    setAutoFilled(prev => {
+      const next = new Set(prev)
+      fields.forEach(f => next.delete(f))
+      return next
+    })
+  }
+
+  // ── Auto-scan when a new receipt photo is selected ───────────
+  const prevFile = useRef(null)
+  useEffect(() => {
+    if (!receiptFile || receiptFile === prevFile.current) return
+    prevFile.current = receiptFile
+    let cancelled = false
+
+    ;(async () => {
+      setScanning(true)
+      setScanDone(false)
+      setScanError(false)
+      setAutoFilled(new Set())          // reset highlights for this new scan
+
+      try {
+        const result = await readReceipt(receiptFile)
+        if (cancelled || !result) return
+
+        const filled = new Set()
+        if (result.amount      != null) { setAmount(String(result.amount));   filled.add('amount') }
+        if (result.description != null) { setDescription(result.description); filled.add('description') }
+        if (result.date        != null) { setDate(result.date);               filled.add('date') }
+        if (result.tags?.length)        { setTags(result.tags);               filled.add('tags') }
+
+        setAutoFilled(filled)
+        setScanDone(true)
+        setTimeout(() => setScanDone(false), 5000)
+      } catch (err) {
+        console.warn('[Receipt scan]', err.message)
+        if (!cancelled) setScanError(true)
+        setTimeout(() => setScanError(false), 5000)
+      } finally {
+        if (!cancelled) setScanning(false)
+      }
+    })()
+
+    return () => { cancelled = true }
+  }, [receiptFile])
+
+  // ── Submit ──────────────────────────────────────────────────
   const isValid = parseFloat(amount) > 0 && description.trim().length > 0
 
   async function handleSubmit(e) {
@@ -38,21 +101,18 @@ export default function AddExpense() {
     setSaving(true)
     setError('')
 
-    // ── 1. Upload receipt (if any) ───────────────────────
     let receiptUrl = null
     if (receiptFile) {
       setUploading(true)
       try {
         const compressed = await compressImage(receiptFile)
-        const path       = `${user.id}/${Date.now()}.jpg`
+        const path = `${user.id}/${Date.now()}.jpg`
         const { error: upErr } = await supabase.storage
           .from('receipts')
           .upload(path, compressed, { contentType: 'image/jpeg', upsert: false })
 
         if (!upErr) {
-          const { data: { publicUrl } } = supabase.storage
-            .from('receipts')
-            .getPublicUrl(path)
+          const { data: { publicUrl } } = supabase.storage.from('receipts').getPublicUrl(path)
           receiptUrl = publicUrl
         } else {
           console.warn('Receipt upload error:', upErr.message)
@@ -64,25 +124,20 @@ export default function AddExpense() {
       }
     }
 
-    // ── 2. Insert expense row ────────────────────────────
     const { error: err } = await supabase.from('expenses').insert({
       user_id:     user.id,
       amount:      parseFloat(amount),
       description: description.trim(),
       label:       label.trim() || null,
-      category:    derivedCategory(tags),   // backward-compat column
-      tags:        tags,                    // new array column
+      category:    derivedCategory(tags),
+      tags,
       date,
       is_pending:  isPending,
       receipt_url: receiptUrl,
     })
 
-    if (err) {
-      setError(err.message)
-      setSaving(false)
-    } else {
-      navigate('/dashboard')
-    }
+    if (err) { setError(err.message); setSaving(false) }
+    else      { navigate('/dashboard') }
   }
 
   const busy = saving || uploading
@@ -99,11 +154,44 @@ export default function AddExpense() {
             </div>
           )}
 
+          {/* ── Receipt photo (top so scan populates fields) ─ */}
+          <ReceiptUpload
+            file={receiptFile}
+            onChange={f => { setReceiptFile(f); setAutoFilled(new Set()) }}
+            uploading={uploading}
+          />
+
+          {/* ── Scan status ───────────────────────────────── */}
+          {scanning && (
+            <div className="flex items-center gap-2 -mt-3 font-mono text-xs text-nb-blue">
+              <span className="w-3 h-3 border border-nb-blue/40 border-t-nb-blue rounded-full animate-spin flex-shrink-0" />
+              Sedang baca resit…
+            </div>
+          )}
+          {scanDone && (
+            <div className="flex items-center gap-1.5 -mt-3 font-mono text-xs text-green-600">
+              <span>✓</span>
+              Resit dibaca — medan yang diisi dipaparkan dalam warna kuning
+            </div>
+          )}
+          {scanError && (
+            <div className="flex items-center gap-1.5 -mt-3 font-mono text-xs text-amber-600">
+              <span>⚠</span> Tidak dapat membaca resit — isi manual
+            </div>
+          )}
+
           {/* ── Amount ────────────────────────────────────── */}
           <div>
-            <label className="block font-mono text-[10px] uppercase tracking-[2px] text-gray-400 mb-1">
-              Jumlah (RM)
-            </label>
+            <div className="flex items-center gap-2 mb-1">
+              <label className="font-mono text-[10px] uppercase tracking-[2px] text-gray-400">
+                Jumlah (RM)
+              </label>
+              {autoFilled.has('amount') && (
+                <span className="font-mono text-[9px] text-yellow-600 bg-yellow-100 px-1.5 py-0.5 rounded">
+                  ✦ dari resit
+                </span>
+              )}
+            </div>
             <div className="flex items-baseline gap-2">
               <span className="font-mono text-2xl text-gray-300">RM</span>
               <input
@@ -113,41 +201,79 @@ export default function AddExpense() {
                 step="0.01"
                 placeholder="0.00"
                 value={amount}
-                onChange={e => setAmount(e.target.value)}
+                onChange={e => { setAmount(e.target.value); clearFill('amount') }}
                 autoFocus
-                className="flex-1 bg-transparent border-b-2 border-nb-blue/40 focus:border-nb-blue pb-1 font-mono text-4xl font-bold text-nb-blue outline-none placeholder:text-gray-200 transition-colors"
+                className={`flex-1 border-b-2 pb-1 font-mono text-4xl font-bold text-nb-blue outline-none placeholder:text-gray-200 transition-colors ${
+                  autoFilled.has('amount')
+                    ? 'bg-yellow-50 border-yellow-400 focus:border-yellow-500'
+                    : 'bg-transparent border-nb-blue/40 focus:border-nb-blue'
+                }`}
               />
             </div>
           </div>
 
           {/* ── Description ───────────────────────────────── */}
           <div>
-            <label className="block font-mono text-[10px] uppercase tracking-[2px] text-gray-400 mb-1">
-              Keterangan
-            </label>
+            <div className="flex items-center gap-2 mb-1">
+              <label className="font-mono text-[10px] uppercase tracking-[2px] text-gray-400">
+                Keterangan
+              </label>
+              {autoFilled.has('description') && (
+                <span className="font-mono text-[9px] text-yellow-600 bg-yellow-100 px-1.5 py-0.5 rounded">
+                  ✦ dari resit
+                </span>
+              )}
+            </div>
             <input
               type="text"
               placeholder="Nasi lemak, Grab, bayar balik…"
               value={description}
-              onChange={e => setDescription(e.target.value)}
+              onChange={e => { setDescription(e.target.value); clearFill('description') }}
               maxLength={80}
-              className="w-full bg-transparent border-b-2 border-nb-blue/40 focus:border-nb-blue pb-1 font-hand text-xl text-gray-800 outline-none placeholder:text-gray-300 transition-colors"
+              className={`w-full border-b-2 pb-1 font-hand text-xl text-gray-800 outline-none placeholder:text-gray-300 transition-colors ${
+                autoFilled.has('description')
+                  ? 'bg-yellow-50 border-yellow-400 focus:border-yellow-500'
+                  : 'bg-transparent border-nb-blue/40 focus:border-nb-blue'
+              }`}
             />
           </div>
 
-          {/* ── AI Tag Input (replaces old Category grid) ─── */}
-          <TagInput
-            tags={tags}
-            onChange={setTags}
-            description={description}
-          />
+          {/* ── Tags ──────────────────────────────────────── */}
+          <div className={autoFilled.has('tags') ? 'bg-yellow-50 rounded-lg px-2 pt-2 pb-1 -mx-2' : ''}>
+            {autoFilled.has('tags') && (
+              <p className="font-mono text-[9px] text-yellow-600 mb-1">✦ tag dari resit</p>
+            )}
+            <TagInput
+              tags={tags}
+              onChange={t => { setTags(t); clearFill('tags') }}
+              description={description}
+            />
+          </div>
 
-          {/* ── Receipt photo ─────────────────────────────── */}
-          <ReceiptUpload
-            file={receiptFile}
-            onChange={setReceiptFile}
-            uploading={uploading}
-          />
+          {/* ── Date ──────────────────────────────────────── */}
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <label className="font-mono text-[10px] uppercase tracking-[2px] text-gray-400">
+                Tarikh
+              </label>
+              {autoFilled.has('date') && (
+                <span className="font-mono text-[9px] text-yellow-600 bg-yellow-100 px-1.5 py-0.5 rounded">
+                  ✦ dari resit
+                </span>
+              )}
+            </div>
+            <input
+              type="date"
+              value={date}
+              max={TODAY}
+              onChange={e => { setDate(e.target.value); clearFill('date') }}
+              className={`border-b-2 pb-1 font-mono text-base text-gray-700 outline-none transition-colors ${
+                autoFilled.has('date')
+                  ? 'bg-yellow-50 border-yellow-400 focus:border-yellow-500'
+                  : 'bg-transparent border-nb-blue/40 focus:border-nb-blue'
+              }`}
+            />
+          </div>
 
           {/* ── Label (optional) ──────────────────────────── */}
           <div>
@@ -161,20 +287,6 @@ export default function AddExpense() {
               onChange={e => setLabel(e.target.value)}
               maxLength={40}
               className="w-full bg-transparent border-b-2 border-nb-blue/40 focus:border-nb-blue pb-1 font-mono text-sm text-gray-700 outline-none placeholder:text-gray-300 transition-colors"
-            />
-          </div>
-
-          {/* ── Date ──────────────────────────────────────── */}
-          <div>
-            <label className="block font-mono text-[10px] uppercase tracking-[2px] text-gray-400 mb-1">
-              Tarikh
-            </label>
-            <input
-              type="date"
-              value={date}
-              max={TODAY}
-              onChange={e => setDate(e.target.value)}
-              className="bg-transparent border-b-2 border-nb-blue/40 focus:border-nb-blue pb-1 font-mono text-base text-gray-700 outline-none transition-colors"
             />
           </div>
 
@@ -198,7 +310,7 @@ export default function AddExpense() {
             </div>
           </label>
 
-          {/* ── Upload progress note ──────────────────────── */}
+          {/* ── Upload progress ───────────────────────────── */}
           {uploading && (
             <div className="flex items-center gap-2 font-mono text-xs text-nb-blue -mt-2">
               <span className="w-3 h-3 border border-nb-blue/40 border-t-nb-blue rounded-full animate-spin" />

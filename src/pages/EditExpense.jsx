@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { compressImage } from '../lib/imageUtils'
+import { readReceipt } from '../lib/receiptReader'
 import Layout from '../components/Layout'
 import TagInput from '../components/TagInput'
 import ReceiptUpload from '../components/ReceiptUpload'
@@ -33,11 +34,43 @@ export default function EditExpense() {
   const [removePhoto,  setRemovePhoto]  = useState(false)  // user wants to clear it
 
   // UI state
-  const [loading,  setLoading]  = useState(true)
-  const [saving,   setSaving]   = useState(false)
-  const [uploading,setUploading]= useState(false)
-  const [error,    setError]    = useState('')
-  const [notFound, setNotFound] = useState(false)
+  const [loading,   setLoading]   = useState(true)
+  const [saving,    setSaving]    = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [scanning,  setScanning]  = useState(false)
+  const [scanDone,  setScanDone]  = useState(false)
+  const [scanError, setScanError] = useState(false)
+  const [error,     setError]     = useState('')
+  const [notFound,  setNotFound]  = useState(false)
+
+  // ── Auto-scan when a NEW receipt file is selected ───────────
+  // (we skip scanning on mount since fields come from the DB)
+  const prevFile = useRef(null)
+  useEffect(() => {
+    if (!receiptFile || receiptFile === prevFile.current) return
+    prevFile.current = receiptFile
+    let cancelled = false
+    ;(async () => {
+      setScanning(true)
+      setScanDone(false)
+      setScanError(false)
+      try {
+        const result = await readReceipt(receiptFile)
+        if (cancelled || !result) return
+        if (result.amount      != null) setAmount(String(result.amount))
+        if (result.description != null) setDescription(result.description)
+        if (result.date        != null) setDate(result.date)
+        setScanDone(true)
+        setTimeout(() => setScanDone(false), 4000)
+      } catch {
+        if (!cancelled) setScanError(true)
+        setTimeout(() => setScanError(false), 4000)
+      } finally {
+        if (!cancelled) setScanning(false)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [receiptFile])
 
   // ── Fetch existing expense ───────────────────────────────────
   useEffect(() => {
@@ -242,6 +275,24 @@ export default function EditExpense() {
               onChange={f => { setReceiptFile(f); setRemovePhoto(false) }}
               uploading={uploading}
             />
+          )}
+
+          {/* ── Scan status banner ────────────────────────── */}
+          {scanning && (
+            <div className="flex items-center gap-2 -mt-3 font-mono text-xs text-nb-blue">
+              <span className="w-3 h-3 border border-nb-blue/40 border-t-nb-blue rounded-full animate-spin flex-shrink-0" />
+              Membaca resit…
+            </div>
+          )}
+          {scanDone && (
+            <div className="flex items-center gap-1.5 -mt-3 font-mono text-xs text-green-600">
+              <span>✓</span> Resit dibaca — semak nilai di bawah
+            </div>
+          )}
+          {scanError && (
+            <div className="flex items-center gap-1.5 -mt-3 font-mono text-xs text-amber-600">
+              <span>⚠</span> Tidak dapat membaca resit — isi manual
+            </div>
           )}
 
           {/* ── Label ─────────────────────────────────────── */}
