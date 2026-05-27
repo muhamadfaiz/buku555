@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { CAT_META } from './CategoryIcon'
 import ReceiptModal from './ReceiptModal'
 
-// Width of the revealed action strip (px)
-const ACTION_W = 136
+const ACTION_W = 80   // px — width of each action button
 
 function fmt(n) {
   return Number(n).toLocaleString('ms-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -24,28 +23,28 @@ function resolveMeta(expense) {
 
 export default function ExpenseRow({ expense, onDelete }) {
   const [modalOpen, setModalOpen] = useState(false)
-  const [swipeX,    setSwipeX]    = useState(0)       // 0 = closed, -ACTION_W = open
-  const [snapping,  setSnapping]  = useState(false)   // true = CSS transition active
+  const [swipeX,    setSwipeX]    = useState(0)
+  const [snapping,  setSnapping]  = useState(false)
   const [dragging,  setDragging]  = useState(false)
 
-  const navigate       = useNavigate()
-  const rowRef         = useRef(null)
-  const startClientX   = useRef(0)
-  const startClientY   = useRef(0)
-  const startSwipeX    = useRef(0)
-  const isHorizontal   = useRef(null)   // null=undecided, true/false=locked
+  const navigate     = useNavigate()
+  const rowRef       = useRef(null)
+  const startClientX = useRef(0)
+  const startClientY = useRef(0)
+  const startSwipeX  = useRef(0)
+  const isHorizontal = useRef(null)
 
-  const meta       = resolveMeta(expense)
-  const { Icon }   = meta
-  const pending    = expense.is_pending
-  const hasPhoto   = !!expense.receipt_url
-  const rot        = pinRotation(expense.id)
+  const meta      = resolveMeta(expense)
+  const { Icon }  = meta
+  const pending   = expense.is_pending
+  const hasPhoto  = !!expense.receipt_url
+  const rot       = pinRotation(expense.id)
 
-  const displayTags = (expense.tags?.length > 0)
+  const displayTags = expense.tags?.length > 0
     ? expense.tags
     : [expense.category].filter(Boolean)
 
-  // ── Snap helper ──────────────────────────────────────────────
+  // ── Snap ─────────────────────────────────────────────────────
   const snapTo = useCallback((x) => {
     setSnapping(true)
     setSwipeX(x)
@@ -53,7 +52,6 @@ export default function ExpenseRow({ expense, onDelete }) {
   }, [])
 
   const close = useCallback(() => snapTo(0), [snapTo])
-  const open  = useCallback(() => snapTo(-ACTION_W), [snapTo])
 
   // ── Drag start ───────────────────────────────────────────────
   function onDragStart(clientX, clientY) {
@@ -64,34 +62,36 @@ export default function ExpenseRow({ expense, onDelete }) {
     setDragging(true)
   }
 
-  // ── Drag move (attached to document while dragging) ──────────
+  // ── Drag move ────────────────────────────────────────────────
   const onDragMove = useCallback((clientX, clientY) => {
     const dx = clientX - startClientX.current
     const dy = clientY - startClientY.current
 
-    // Decide horizontal vs vertical on first significant movement
     if (isHorizontal.current === null && Math.abs(dx) + Math.abs(dy) > 6) {
       isHorizontal.current = Math.abs(dx) > Math.abs(dy)
     }
     if (!isHorizontal.current) return
 
-    const next = Math.max(-ACTION_W, Math.min(0, startSwipeX.current + dx))
+    // Allow swipe both directions: left → edit, right → delete
+    const next = Math.max(-ACTION_W, Math.min(ACTION_W, startSwipeX.current + dx))
     setSwipeX(next)
   }, [])
 
-  // ── Drag end ─────────────────────────────────────────────────
+  // ── Drag end — snap to nearest position ──────────────────────
   const onDragEnd = useCallback(() => {
     setDragging(false)
     isHorizontal.current = null
     setSwipeX(prev => {
-      const target = prev < -ACTION_W / 2 ? -ACTION_W : 0
+      let target = 0
+      if (prev < -ACTION_W / 2)  target = -ACTION_W   // snap open → edit
+      else if (prev > ACTION_W / 2) target = ACTION_W  // snap open → delete
       setSnapping(true)
       setTimeout(() => setSnapping(false), 250)
       return target
     })
   }, [])
 
-  // ── Attach / detach document-level drag listeners ────────────
+  // ── Attach / detach document listeners while dragging ────────
   useEffect(() => {
     if (!dragging) return
     const onMouseMove = e => onDragMove(e.clientX, e.clientY)
@@ -114,53 +114,37 @@ export default function ExpenseRow({ expense, onDelete }) {
     const handler = e => {
       if (rowRef.current && !rowRef.current.contains(e.target)) close()
     }
-    document.addEventListener('mousedown', handler)
+    document.addEventListener('mousedown',  handler)
     document.addEventListener('touchstart', handler)
     return () => {
-      document.removeEventListener('mousedown', handler)
+      document.removeEventListener('mousedown',  handler)
       document.removeEventListener('touchstart', handler)
     }
   }, [swipeX, close])
 
-  // ── Handlers ─────────────────────────────────────────────────
   const onMouseDown = e => {
-    // Only drag on main mouse button; ignore clicks on buttons/links
     if (e.button !== 0) return
     if (e.target.closest('button, a')) return
     onDragStart(e.clientX, e.clientY)
   }
-
   const onTouchStart = e => {
     if (e.target.closest('button, a')) return
     onDragStart(e.touches[0].clientX, e.touches[0].clientY)
   }
 
-  const isOpen = swipeX <= -ACTION_W / 2
-
   return (
     <>
-      {/* ── Swipe wrapper ──────────────────────────────────── */}
       <div
         ref={rowRef}
         className={`relative overflow-hidden border-b border-nb-line/40 ${pending ? 'opacity-60' : ''}`}
       >
-        {/* ── Action strip (revealed on swipe left) ─────────── */}
-        <div
-          className="absolute inset-y-0 right-0 flex"
-          style={{ width: ACTION_W }}
-        >
-          {/* Edit */}
-          <button
-            type="button"
-            onClick={() => { close(); navigate(`/edit/${expense.id}`) }}
-            className="flex-1 flex flex-col items-center justify-center gap-0.5 bg-nb-blue hover:bg-nb-navy active:brightness-90 transition-colors"
-          >
-            <span className="text-white text-lg leading-none">✎</span>
-            <span className="text-white/80 font-mono text-[9px] uppercase tracking-wider">Edit</span>
-          </button>
 
-          {/* Delete */}
-          {onDelete && (
+        {/* ── LEFT action: Delete (revealed by swiping right) ─── */}
+        {onDelete && (
+          <div
+            className="absolute inset-y-0 left-0 flex items-stretch"
+            style={{ width: ACTION_W }}
+          >
             <button
               type="button"
               onClick={() => { close(); onDelete(expense.id) }}
@@ -169,10 +153,25 @@ export default function ExpenseRow({ expense, onDelete }) {
               <span className="text-white text-base leading-none">✕</span>
               <span className="text-white/80 font-mono text-[9px] uppercase tracking-wider">Padam</span>
             </button>
-          )}
+          </div>
+        )}
+
+        {/* ── RIGHT action: Edit (revealed by swiping left) ─── */}
+        <div
+          className="absolute inset-y-0 right-0 flex items-stretch"
+          style={{ width: ACTION_W }}
+        >
+          <button
+            type="button"
+            onClick={() => { close(); navigate(`/edit/${expense.id}`) }}
+            className="flex-1 flex flex-col items-center justify-center gap-0.5 bg-nb-blue hover:bg-nb-navy active:brightness-90 transition-colors"
+          >
+            <span className="text-white text-lg leading-none">✎</span>
+            <span className="text-white/80 font-mono text-[9px] uppercase tracking-wider">Edit</span>
+          </button>
         </div>
 
-        {/* ── Row content (slides left) ──────────────────────── */}
+        {/* ── Row content (slides left or right) ──────────────── */}
         <div
           className="relative flex items-center gap-2.5 pl-14 pr-3 py-2 bg-white select-none"
           style={{
@@ -183,7 +182,8 @@ export default function ExpenseRow({ expense, onDelete }) {
           onMouseDown={onMouseDown}
           onTouchStart={onTouchStart}
         >
-          {/* ── Category icon badge ────────────────────────── */}
+
+          {/* ── Category icon badge ───────────────────────── */}
           <span className={`relative flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center p-1.5 ${meta.cls}`}>
             <Icon />
             {pending && (
@@ -193,7 +193,7 @@ export default function ExpenseRow({ expense, onDelete }) {
             )}
           </span>
 
-          {/* ── Description + tags ────────────────────────── */}
+          {/* ── Description + tags ───────────────────────── */}
           <div className="flex-1 min-w-0">
             <div className="flex items-baseline gap-1.5 flex-wrap">
               <p className={`font-hand text-base leading-tight truncate ${
@@ -207,7 +207,6 @@ export default function ExpenseRow({ expense, onDelete }) {
                 </span>
               )}
             </div>
-            {/* Tag chips */}
             <div className="flex flex-wrap gap-1 mt-0.5">
               {displayTags.map(tag => (
                 <button
@@ -227,7 +226,7 @@ export default function ExpenseRow({ expense, onDelete }) {
             </div>
           </div>
 
-          {/* ── Amount ────────────────────────────────────── */}
+          {/* ── Amount ───────────────────────────────────── */}
           <span className={`font-stamp text-base flex-shrink-0 ${
             pending
               ? 'text-gray-400 line-through decoration-amber-400'
@@ -238,17 +237,7 @@ export default function ExpenseRow({ expense, onDelete }) {
             RM {fmt(expense.amount)}
           </span>
 
-          {/* ── Swipe hint arrow (shows when closed) ──────── */}
-          <span
-            className={`flex-shrink-0 text-gray-300 text-xs font-mono transition-opacity duration-200 pointer-events-none select-none ${
-              isOpen ? 'opacity-0' : 'opacity-40'
-            }`}
-            aria-hidden
-          >
-            ‹
-          </span>
-
-          {/* ── Receipt polaroid ──────────────────────────── */}
+          {/* ── Receipt polaroid ─────────────────────────── */}
           {hasPhoto && (
             <div className="relative flex-shrink-0 ml-1">
               <div
@@ -271,10 +260,10 @@ export default function ExpenseRow({ expense, onDelete }) {
               </button>
             </div>
           )}
+
         </div>
       </div>
 
-      {/* ── Full-screen receipt modal ─────────────────────── */}
       {modalOpen && (
         <ReceiptModal
           url={expense.receipt_url}
