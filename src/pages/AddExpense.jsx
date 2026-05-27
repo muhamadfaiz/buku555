@@ -142,7 +142,7 @@ export default function AddExpense() {
 
   return (
     <Layout title="Tambah Rekod">
-      <div className="ruled-paper flex-1 overflow-y-auto page-enter">
+      <div className="ruled-paper flex-1 min-h-0 overflow-y-auto page-enter">
         <form onSubmit={handleSubmit} className="flex flex-col gap-6 pl-14 pr-4 py-6">
 
           {/* ── Error ─────────────────────────────────────── */}

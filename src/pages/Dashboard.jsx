@@ -90,7 +90,7 @@ export default function Dashboard() {
       </div>
 
       {/* ── Expense list ────────────────────────────────── */}
-      <div className="ruled-paper flex-1 overflow-y-auto page-enter">
+      <div className="ruled-paper flex-1 min-h-0 overflow-y-auto page-enter">
 
         {loading && (
           <div className="flex items-center justify-center py-16">

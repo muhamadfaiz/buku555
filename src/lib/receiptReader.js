@@ -11,14 +11,29 @@ const MODEL      = 'gemini-flash-latest'
 const GEMINI_URL = () =>
   `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_KEY}`
 
-const PROMPT = `You are a receipt scanner for a Malaysian expense tracker app.
+const PROMPT = `You are a receipt scanner for a Malaysian expense tracker app called Buku 555.
 Analyze this receipt image and extract:
 1. Total amount (number only, no currency symbol)
-2. Merchant/store name
-3. Date (in YYYY-MM-DD format if visible)
-4. Category tags (suggest 1-3 tags in Malay or English based on the type of store)
+2. Merchant/store name as the description
+3. Date (in YYYY-MM-DD format if visible, else null)
+4. 1–3 category tags — ALL tags must be in Bahasa Melayu only. Never use English.
 
-Respond in JSON format only:
+Tag rules (use ONLY these or similar Malay words):
+- Food/restaurant → "Makan" (always first), then optionally e.g. "Sarapan", "Makan Tengahari", "Makan Malam", "Restoran", "Kafe", "Makanan Segera"
+- Grocery/supermarket → "Makan", "Runcit"
+- Transport/petrol/toll → "Transport", then e.g. "Minyak", "Tol", "Grab", "Bas"
+- Bills/utilities → "Bil", then e.g. "Elektrik", "Air", "Telefon", "Internet"
+- Shopping/retail → "Beli-belah", then e.g. "Pakaian", "Barangan Rumah"
+- Health/pharmacy → "Kesihatan", then e.g. "Farmasi", "Ubat"
+- Maintenance/repair → "Selenggara"
+- Entertainment → "Hiburan"
+- Gifts/donations → "Hadiah"
+- Anything else → "Lain-lain"
+
+NEVER use English words like Food, Fast Food, Groceries, Transport, Health, Shopping, etc.
+NEVER mix English and Malay tags.
+
+Respond in JSON format only (no markdown):
 {"amount": number, "description": string, "date": string or null, "tags": string[]}
 
 If you cannot determine a value, use null.`
