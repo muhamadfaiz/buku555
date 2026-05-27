@@ -14,11 +14,17 @@ function pinRotation(id = '') {
   return ((h % 11) - 5) * 0.7
 }
 
+const CAT_KEYS = Object.keys(CAT_META)
+function findMeta(key) {
+  const match = CAT_KEYS.find(k => k.toLowerCase() === key?.toLowerCase())
+  return match ? CAT_META[match] : null
+}
+
 function resolveMeta(expense) {
   const tags = expense.tags ?? []
-  const fromTag = tags.find(t => CAT_META[t])
-  if (fromTag) return CAT_META[fromTag]
-  return CAT_META[expense.category] ?? CAT_META['Lain-lain']
+  const fromTag = tags.find(t => findMeta(t))
+  if (fromTag) return findMeta(fromTag)
+  return findMeta(expense.category) ?? CAT_META['Lain-lain']
 }
 
 export default function ExpenseRow({ expense, onDelete }) {
@@ -33,12 +39,14 @@ export default function ExpenseRow({ expense, onDelete }) {
   const startClientY = useRef(0)
   const startSwipeX  = useRef(0)
   const isHorizontal = useRef(null)
+  const actionTriggered = useRef(false)
 
   const meta      = resolveMeta(expense)
   const { Icon }  = meta
   const pending   = expense.is_pending
   const hasPhoto  = !!expense.receipt_url
   const rot       = pinRotation(expense.id)
+
 
   const displayTags = expense.tags?.length > 0
     ? expense.tags
@@ -56,6 +64,7 @@ export default function ExpenseRow({ expense, onDelete }) {
   // ── Drag start ───────────────────────────────────────────────
   function onDragStart(clientX, clientY) {
     isHorizontal.current = null
+    actionTriggered.current = false
     startClientX.current = clientX
     startClientY.current = clientY
     startSwipeX.current  = swipeX
@@ -91,6 +100,7 @@ export default function ExpenseRow({ expense, onDelete }) {
   const onDragEnd = useCallback(() => {
     setDragging(false)
     isHorizontal.current = null
+    if (actionTriggered.current) return
     
     const threshold = 150
     const rowWidth = rowRef.current ? rowRef.current.clientWidth : 400
@@ -98,6 +108,7 @@ export default function ExpenseRow({ expense, onDelete }) {
     setSwipeX(prev => {
       let target = 0
       if (prev < -threshold) {
+        actionTriggered.current = true
         target = -rowWidth   // slide all the way left to edit
         setSnapping(true)
         setTimeout(() => {
@@ -108,6 +119,7 @@ export default function ExpenseRow({ expense, onDelete }) {
       } else if (prev < -ACTION_W / 2) {
         target = -ACTION_W   // snap open → reveal edit button
       } else if (prev > threshold && onDelete) {
+        actionTriggered.current = true
         target = rowWidth    // slide all the way right to delete
         setSnapping(true)
         setTimeout(() => {
@@ -290,7 +302,7 @@ export default function ExpenseRow({ expense, onDelete }) {
           <span className={`font-stamp text-base flex-shrink-0 ${
             pending
               ? 'text-gray-400 line-through decoration-amber-400'
-              : expense.category === 'Hutang' || expense.tags?.includes('Hutang')
+              : expense.category?.toLowerCase() === 'hutang' || expense.tags?.some(t => t.toLowerCase() === 'hutang')
                 ? 'text-nb-red'
                 : 'text-nb-blue'
           }`}>
