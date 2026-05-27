@@ -67,6 +67,11 @@ export default function MonthlyPage() {
 
   useEffect(() => { fetchMonth() }, [fetchMonth])
 
+  async function handleDelete(id) {
+    await supabase.from('expenses').delete().eq('id', id)
+    setExpenses(prev => prev.filter(e => e.id !== id))
+  }
+
   const total   = expenses.reduce((s, e) => s + Number(e.amount), 0)
   const grouped = groupByDate(expenses)
   const days    = grouped.length
@@ -148,7 +153,9 @@ export default function MonthlyPage() {
                       <span className="font-stamp text-xs text-gray-500 uppercase">{fmtDay(date)}</span>
                       <span className="font-mono text-xs text-gray-500">RM {fmt(dayTotal)}</span>
                     </div>
-                    {exps.map(exp => <ExpenseRow key={exp.id} expense={exp} />)}
+                    {exps.map(exp => (
+                      <ExpenseRow key={exp.id} expense={exp} onDelete={handleDelete} />
+                    ))}
                   </div>
                 )
               })}

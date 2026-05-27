@@ -72,24 +72,58 @@ export default function ExpenseRow({ expense, onDelete }) {
     }
     if (!isHorizontal.current) return
 
-    // Allow swipe both directions: left → edit, right → delete
-    const next = Math.max(-ACTION_W, Math.min(ACTION_W, startSwipeX.current + dx))
+    const rawNext = startSwipeX.current + dx
+    const maxSwipe = rowRef.current ? rowRef.current.clientWidth : 400
+    let next = 0
+    if (rawNext < 0) {
+      next = Math.max(-maxSwipe, rawNext)
+    } else {
+      if (onDelete) {
+        next = Math.min(maxSwipe, rawNext)
+      } else {
+        next = 0
+      }
+    }
     setSwipeX(next)
-  }, [])
+  }, [onDelete])
 
   // ── Drag end — snap to nearest position ──────────────────────
   const onDragEnd = useCallback(() => {
     setDragging(false)
     isHorizontal.current = null
+    
+    const threshold = 150
+    const rowWidth = rowRef.current ? rowRef.current.clientWidth : 400
+
     setSwipeX(prev => {
       let target = 0
-      if (prev < -ACTION_W / 2)  target = -ACTION_W   // snap open → edit
-      else if (prev > ACTION_W / 2) target = ACTION_W  // snap open → delete
+      if (prev < -threshold) {
+        target = -rowWidth   // slide all the way left to edit
+        setSnapping(true)
+        setTimeout(() => {
+          setSnapping(false)
+          navigate(`/edit/${expense.id}`)
+        }, 220)
+        return target
+      } else if (prev < -ACTION_W / 2) {
+        target = -ACTION_W   // snap open → reveal edit button
+      } else if (prev > threshold && onDelete) {
+        target = rowWidth    // slide all the way right to delete
+        setSnapping(true)
+        setTimeout(() => {
+          setSnapping(false)
+          onDelete(expense.id)
+        }, 220)
+        return target
+      } else if (prev > ACTION_W / 2 && onDelete) {
+        target = ACTION_W  // snap open → reveal delete button
+      }
+      
       setSnapping(true)
       setTimeout(() => setSnapping(false), 250)
       return target
     })
-  }, [])
+  }, [onDelete, expense.id, navigate])
 
   // ── Attach / detach document listeners while dragging ────────
   useEffect(() => {
@@ -142,32 +176,58 @@ export default function ExpenseRow({ expense, onDelete }) {
         {/* ── LEFT action: Delete (revealed by swiping right) ─── */}
         {onDelete && (
           <div
-            className="absolute inset-y-0 left-0 flex items-stretch"
-            style={{ width: ACTION_W }}
+            className="absolute inset-y-0 left-0 flex items-stretch bg-nb-red overflow-hidden"
+            style={{ width: swipeX > 0 ? `${swipeX}px` : 0 }}
           >
             <button
               type="button"
               onClick={() => { close(); onDelete(expense.id) }}
-              className="flex-1 flex flex-col items-center justify-center gap-0.5 bg-nb-red hover:brightness-90 active:brightness-75 transition-all"
+              className="w-full flex items-center gap-3 px-6 text-white hover:brightness-95 active:brightness-90 transition-all whitespace-nowrap"
             >
-              <span className="text-white text-base leading-none">✕</span>
-              <span className="text-white/80 font-mono text-[9px] uppercase tracking-wider">Padam</span>
+              <span 
+                className="text-white text-lg leading-none transition-transform duration-200"
+                style={{ transform: `scale(${swipeX > 150 ? 1.3 : 1})` }}
+              >
+                ✕
+              </span>
+              <span 
+                className="font-mono text-[11px] uppercase tracking-wider transition-all duration-200"
+                style={{ 
+                  fontWeight: swipeX > 150 ? 'bold' : 'normal',
+                  opacity: swipeX > 40 ? 1 : 0 
+                }}
+              >
+                {swipeX > 150 ? 'Lepas untuk Padam' : 'Padam'}
+              </span>
             </button>
           </div>
         )}
 
         {/* ── RIGHT action: Edit (revealed by swiping left) ─── */}
         <div
-          className="absolute inset-y-0 right-0 flex items-stretch"
-          style={{ width: ACTION_W }}
+          className="absolute inset-y-0 right-0 flex items-stretch bg-nb-blue overflow-hidden"
+          style={{ width: swipeX < 0 ? `${-swipeX}px` : 0 }}
         >
           <button
             type="button"
             onClick={() => { close(); navigate(`/edit/${expense.id}`) }}
-            className="flex-1 flex flex-col items-center justify-center gap-0.5 bg-nb-blue hover:bg-nb-navy active:brightness-90 transition-colors"
+            className="w-full flex items-center justify-end gap-3 px-6 text-white hover:brightness-95 active:brightness-90 transition-all whitespace-nowrap"
           >
-            <span className="text-white text-lg leading-none">✎</span>
-            <span className="text-white/80 font-mono text-[9px] uppercase tracking-wider">Edit</span>
+            <span 
+              className="font-mono text-[11px] uppercase tracking-wider transition-all duration-200"
+              style={{ 
+                fontWeight: swipeX < -150 ? 'bold' : 'normal',
+                opacity: swipeX < -40 ? 1 : 0 
+              }}
+            >
+              {swipeX < -150 ? 'Lepas untuk Edit' : 'Edit'}
+            </span>
+            <span 
+              className="text-white text-lg leading-none transition-transform duration-200"
+              style={{ transform: `scale(${swipeX < -150 ? 1.3 : 1})` }}
+            >
+              ✎
+            </span>
           </button>
         </div>
 
